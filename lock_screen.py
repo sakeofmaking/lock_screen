@@ -3,9 +3,11 @@
 """
 Lock Screen
 
-Description: Runs in background. Presses F15 every 15 min to keep computer awake. Listens the keyboard events.
-If keyboard event matches lock shortcut, mouse and keyboard are blocked. Program continues to listen to keyboard
-events. If keyboard event matches unlock password, mouse and keyboard are unblocked
+Description: Runs in background using threading.
+    - Presses F15 every 15 min to keep computer awake.
+    - Listens for keyboard addhotkey to enter lock mode. In lock mode, keyboard and mouse are blocked. Task Manager
+    is automatically exited
+    - In lock mode, listens for keyboard password. If entered, keyboard and mouse are unblocked
 
 Sources:
 https://stackoverflow.com/questions/7529991/disable-or-lock-mouse-and-keyboard-in-python
@@ -13,79 +15,99 @@ https://stackoverflow.com/questions/13564851/how-to-generate-keyboard-events-in-
 msdn.microsoft.com/en-us/library/dd375731
 
 Author: Nic La
-Last modified: 19-07-20
+Last modified: 19-08-31
 """
 
 
 import time
-import caffeine
+import threading
 import keyboard
+import mouse
+import subprocess
 
 
 lock_hotkey = 'alt + space'
 password = 'unicorn'
-locked = 0
-recorded = []
-event_clean = []
+lock_flag = 0
+monitor_flag = 0
+ch = 0
 
 
-def lock_dev():
-    global locked
-    print('block mouse and keyboard')
-    locked = 1
-    # read any key press into keyboard.block_key('h') unless is matches password
+# Press F15 every 15 min
+def caffeine_thread():
+    while True:
+        time.sleep(900)
+        keyboard.send('F15', do_press=True, do_release=True)
+        print('F15')
 
-    # TODO block keyboard and mouse CAREFUL be prepared to restart PC
+
+# Listen for lock hotkey
+def listen_thread():
+    global lock_flag
+    global monitor_flag
+    global lock_hotkey
+    while True:
+        # TODO: time.sleep(1) helps sluggish mouse problem but sometimes causes 'event' referenced before assignment
+        # TODO: error
+        time.sleep(1)
+        if (lock_flag == 1) and (monitor_flag == 0):
+            print('Entering lock mode')
+            monitor_flag = 1
+            keyboard.hook(monitor_keyevents, suppress=True)
+            mouse.hook(monitor_mouse)
+        if (lock_flag == 0) and (monitor_flag == 1):
+            print('Entering unlock mode')
+            monitor_flag = 0
+            keyboard.unhook_all()
+            keyboard.add_hotkey(lock_hotkey, lock, args=[1], suppress=True)
+            mouse.unhook_all()
+        if lock_flag == 1:
+            search_task()
 
 
-def unlock_dev():
-    global locked
-    print('unblock mouse and keyboard')
-    locked = 0
-    keyboard.unhook_all()
-    # TODO: unblock keyboard and mouse
+# Monitor keyboard events for password
+def monitor_keyevents(key):
+    global password
+    global lock_flag
+    global ch
+    # On key event down, compare to password
+    if str(key.event_type) == 'down':
+        if password[ch] == str(key.name):
+            ch += 1
+        else:
+            ch = 0
+    if ch == len(password):
+        lock_flag = 0
+        ch = 0
+    keyboard.block_key(str(key.name))
+
+
+# Monitor mouse events
+def monitor_mouse(event):
+    mouse.move(0, 0, absolute=True, duration=0)
+
+
+# Set lock flag
+def lock(mode):
+    global lock_flag
+    lock_flag = mode
+
+
+# Search tasks for Taskmgr.exe
+def search_task():
+    all_tasks = subprocess.check_output('tasklist')
+    all_tasks_list = (all_tasks.decode("utf-8")).split('\n')
+    for x in range(len(all_tasks_list)):
+        for y in all_tasks_list[x].split('.exe'):
+            if y == 'Taskmgr':
+                subprocess.call('taskkill /im taskmgr.exe')
 
 
 if __name__ == "__main__":
-    while True:
-
-        # Listen for hotkey to lock computer
-        if locked == 0:
-            keyboard.add_hotkey(lock_hotkey, lambda: lock_dev())
-
-        # While locked, record keyboard input until "enter" pressed
-        if locked == 1:
-            recorded = keyboard.record(until='enter')
-
-        # Parse recorded and store in event_clean
-        if len(recorded) != 0:
-            for event in recorded:
-                event_str = str(event).replace('KeyboardEvent', '')  # convert to str and remove 'KeyboardEvent'
-                if 'down' in event_str:  # only record down events, ignore up events
-                    event_str = event_str[1:-1]  # remove parentheses
-                    event_str = event_str.replace(' down', '')
-                    event_str = event_str.replace('space', ' ')
-                    event_clean.append(event_str)
-
-        # check event_clean for password
-        # If password, unlock computer
-        y = 0
-        for x in event_clean:
-            if x == password[y]:
-                y += 1
-                if y == len(password):
-                    unlock_dev()
-                    break
-            else:
-                y = 0
-
-        if len(event_clean) > 1:
-            print(''.join(event_clean))
-
-        # If no password, clean recorded and continue
-        recorded = []
-        event_clean = []
-        
-        time.sleep(1)
-
+    # Initialize
+    keyboard.add_hotkey(lock_hotkey, lock, args=[1], suppress=True)
+    x = threading.Thread(target=caffeine_thread)
+    y = threading.Thread(target=listen_thread)
+    x.start()
+    y.start()
 
