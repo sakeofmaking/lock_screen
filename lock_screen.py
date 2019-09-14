@@ -47,10 +47,7 @@ def listen_thread():
     global monitor_flag
     global lock_hotkey
     while True:
-        # TODO: time.sleep(1) helps sluggish mouse problem but sometimes causes 'event' referenced before assignment
-        # TODO: error
         time.sleep(1)
-        # TODO: Hide all icons on the desktop to display wallpaper
         if (lock_flag == 1) and (monitor_flag == 0):
             print('Entering lock mode')
             monitor_flag = 1
