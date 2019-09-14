@@ -50,14 +50,61 @@ def listen_thread():
         # TODO: time.sleep(1) helps sluggish mouse problem but sometimes causes 'event' referenced before assignment
         # TODO: error
         time.sleep(1)
+        # TODO: Hide all icons on the desktop to display wallpaper
         if (lock_flag == 1) and (monitor_flag == 0):
             print('Entering lock mode')
             monitor_flag = 1
+            time.sleep(0.1)
+            keyboard.send('windows+m', do_press=True, do_release=True)
+            time.sleep(0.1)
+            mouse.move(0, 0, absolute=True, duration=0)
+            time.sleep(0.1)
+            mouse.right_click()
+            time.sleep(0.1)
+            keyboard.send('down', do_press=True, do_release=True)
+            time.sleep(0.1)
+            keyboard.send('right', do_press=True, do_release=True)
+            time.sleep(0.1)
+            keyboard.send('down', do_press=True, do_release=True)
+            time.sleep(0.1)
+            keyboard.send('down', do_press=True, do_release=True)
+            time.sleep(0.1)
+            keyboard.send('down', do_press=True, do_release=True)
+            time.sleep(0.1)
+            keyboard.send('down', do_press=True, do_release=True)
+            time.sleep(0.1)
+            keyboard.send('down', do_press=True, do_release=True)
+            time.sleep(0.1)
+            keyboard.send('enter', do_press=True, do_release=True)
+            time.sleep(0.1)
             keyboard.hook(monitor_keyevents, suppress=True)
             mouse.hook(monitor_mouse)
         if (lock_flag == 0) and (monitor_flag == 1):
             print('Entering unlock mode')
             monitor_flag = 0
+            time.sleep(0.1)
+            mouse.move(0, 0, absolute=True, duration=0)
+            time.sleep(0.1)
+            mouse.right_click()
+            time.sleep(0.1)
+            keyboard.send('down', do_press=True, do_release=True)
+            time.sleep(0.1)
+            keyboard.send('right', do_press=True, do_release=True)
+            time.sleep(0.1)
+            keyboard.send('down', do_press=True, do_release=True)
+            time.sleep(0.1)
+            keyboard.send('down', do_press=True, do_release=True)
+            time.sleep(0.1)
+            keyboard.send('down', do_press=True, do_release=True)
+            time.sleep(0.1)
+            keyboard.send('down', do_press=True, do_release=True)
+            time.sleep(0.1)
+            keyboard.send('down', do_press=True, do_release=True)
+            time.sleep(0.1)
+            keyboard.send('enter', do_press=True, do_release=True)
+            time.sleep(0.1)
+            keyboard.send('shift+windows+m', do_press=True, do_release=True)
+            time.sleep(0.1)
             keyboard.unhook_all()
             keyboard.add_hotkey(lock_hotkey, lock, args=[1], suppress=True)
             mouse.unhook_all()
@@ -99,7 +146,7 @@ def search_task():
     all_tasks_list = (all_tasks.decode("utf-8")).split('\n')
     for x in range(len(all_tasks_list)):
         for y in all_tasks_list[x].split('.exe'):
-            if y == 'Taskmgr':
+            if (y == 'Taskmgr') or (y == 'taskmgr'):
                 subprocess.call('taskkill /im taskmgr.exe')
 
 
