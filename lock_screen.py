@@ -24,6 +24,7 @@ import threading
 import keyboard
 import mouse
 import subprocess
+import platform
 
 
 lock_hotkey = 'alt + space'
@@ -31,6 +32,7 @@ password = 'unicorn'
 lock_flag = 0
 monitor_flag = 0
 ch = 0
+windows = 0  # 0 = windows 7, 1 = windows 10
 
 
 # Press F15 every 15 min
@@ -46,6 +48,7 @@ def listen_thread():
     global lock_flag
     global monitor_flag
     global lock_hotkey
+    global windows
     while True:
         time.sleep(1)
         if (lock_flag == 1) and (monitor_flag == 0):
@@ -58,6 +61,9 @@ def listen_thread():
             time.sleep(0.1)
             mouse.right_click()
             time.sleep(0.1)
+            if windows == 0:
+                keyboard.send('down', do_press=True, do_release=True)
+                time.sleep(0.1)
             keyboard.send('down', do_press=True, do_release=True)
             time.sleep(0.1)
             keyboard.send('right', do_press=True, do_release=True)
@@ -84,6 +90,9 @@ def listen_thread():
             time.sleep(0.1)
             mouse.right_click()
             time.sleep(0.1)
+            if windows == 0:
+                keyboard.send('down', do_press=True, do_release=True)
+                time.sleep(0.1)
             keyboard.send('down', do_press=True, do_release=True)
             time.sleep(0.1)
             keyboard.send('right', do_press=True, do_release=True)
@@ -149,6 +158,10 @@ def search_task():
 
 if __name__ == "__main__":
     # Initialize
+    if platform.release() == '7':
+        windows = 0
+    elif platform.release() == '10':
+        windows = 1
     keyboard.add_hotkey(lock_hotkey, lock, args=[1], suppress=True)
     x = threading.Thread(target=caffeine_thread)
     y = threading.Thread(target=listen_thread)
