@@ -13,9 +13,11 @@ Sources:
 https://stackoverflow.com/questions/7529991/disable-or-lock-mouse-and-keyboard-in-python
 https://stackoverflow.com/questions/13564851/how-to-generate-keyboard-events-in-python
 msdn.microsoft.com/en-us/library/dd375731
+https://www.programcreek.com/python/example/10639/win32gui.EnumWindows
+https://stackoverflow.com/questions/31402166/window-claims-to-be-visible-while-its-not
 
 Author: Nic La
-Last modified: 19-08-31
+Last modified: 19-10-20
 """
 
 
