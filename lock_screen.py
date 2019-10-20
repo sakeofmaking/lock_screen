@@ -25,6 +25,8 @@ import keyboard
 import mouse
 import subprocess
 import platform
+import win32gui
+import os
 
 
 lock_hotkey = 'alt + space'
@@ -33,6 +35,7 @@ lock_flag = 0
 monitor_flag = 0
 ch = 0
 windows = 0  # 0 = windows 7, 1 = windows 10
+hwnd_ignore = [66562, 1050110, 65794]
 
 
 # Press F15 every 15 min
@@ -41,6 +44,18 @@ def caffeine_thread():
         time.sleep(900)
         keyboard.send('F15', do_press=True, do_release=True)
         print('F15')
+
+
+# Return list of active window handlers
+def get_hwnds():
+    def callback(hwnd, hwnds):
+        if win32gui.IsWindowVisible(hwnd) and not win32gui.IsIconic(hwnd) and hwnd not in hwnd_ignore and \
+                win32gui.GetWindowText(hwnd):
+            hwnds.append(hwnd)
+        return True
+    hwnds = []
+    win32gui.EnumWindows(callback, hwnds)
+    return hwnds
 
 
 # Listen for lock hotkey
@@ -54,63 +69,19 @@ def listen_thread():
         if (lock_flag == 1) and (monitor_flag == 0):
             print('Entering lock mode')
             monitor_flag = 1
-            time.sleep(0.1)
-            keyboard.send('windows+m', do_press=True, do_release=True)
-            time.sleep(0.1)
-            mouse.move(0, 0, absolute=True, duration=0)
-            time.sleep(0.1)
-            mouse.right_click()
-            time.sleep(0.1)
-            if windows == 0:
-                keyboard.send('down', do_press=True, do_release=True)
-                time.sleep(0.1)
-            keyboard.send('down', do_press=True, do_release=True)
-            time.sleep(0.1)
-            keyboard.send('right', do_press=True, do_release=True)
-            time.sleep(0.1)
-            keyboard.send('down', do_press=True, do_release=True)
-            time.sleep(0.1)
-            keyboard.send('down', do_press=True, do_release=True)
-            time.sleep(0.1)
-            keyboard.send('down', do_press=True, do_release=True)
-            time.sleep(0.1)
-            keyboard.send('down', do_press=True, do_release=True)
-            time.sleep(0.1)
-            keyboard.send('down', do_press=True, do_release=True)
-            time.sleep(0.1)
-            keyboard.send('enter', do_press=True, do_release=True)
-            time.sleep(0.1)
             keyboard.hook(monitor_keyevents, suppress=True)
             mouse.hook(monitor_mouse)
+            for num, awnd in enumerate(get_hwnds()):
+                print(win32gui.GetWindowText(awnd)[0:10], awnd, win32gui.GetWindowRect(awnd))  # Print active window name
+                w_l, w_t, w_r, w_b = win32gui.GetWindowRect(awnd)  # get active window placement
+                os.system(str(num + 1) + '.jpg')  # open picture
+                time.sleep(0.5)  # delay to allow picture to enter foreground
+                nwnd = win32gui.GetForegroundWindow()  # change window handle to foreground window
+                win32gui.MoveWindow(nwnd, w_l, w_t, w_r - w_l, w_b - w_t, 0)  # place window handle
         if (lock_flag == 0) and (monitor_flag == 1):
             print('Entering unlock mode')
             monitor_flag = 0
-            time.sleep(0.1)
-            mouse.move(0, 0, absolute=True, duration=0)
-            time.sleep(0.1)
-            mouse.right_click()
-            time.sleep(0.1)
-            if windows == 0:
-                keyboard.send('down', do_press=True, do_release=True)
-                time.sleep(0.1)
-            keyboard.send('down', do_press=True, do_release=True)
-            time.sleep(0.1)
-            keyboard.send('right', do_press=True, do_release=True)
-            time.sleep(0.1)
-            keyboard.send('down', do_press=True, do_release=True)
-            time.sleep(0.1)
-            keyboard.send('down', do_press=True, do_release=True)
-            time.sleep(0.1)
-            keyboard.send('down', do_press=True, do_release=True)
-            time.sleep(0.1)
-            keyboard.send('down', do_press=True, do_release=True)
-            time.sleep(0.1)
-            keyboard.send('down', do_press=True, do_release=True)
-            time.sleep(0.1)
-            keyboard.send('enter', do_press=True, do_release=True)
-            time.sleep(0.1)
-            keyboard.send('shift+windows+m', do_press=True, do_release=True)
-            time.sleep(0.1)
+            subprocess.call('taskkill /im Microsoft.Photos.exe /f')
             keyboard.unhook_all()
             keyboard.add_hotkey(lock_hotkey, lock, args=[1], suppress=True)
             mouse.unhook_all()
