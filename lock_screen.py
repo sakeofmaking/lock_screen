@@ -17,7 +17,7 @@ https://www.programcreek.com/python/example/10639/win32gui.EnumWindows
 https://stackoverflow.com/questions/31402166/window-claims-to-be-visible-while-its-not
 
 Author: Nic La
-Last modified: 19-10-20
+Last modified: 19-10-26
 """
 
 
@@ -37,7 +37,7 @@ lock_flag = 0
 monitor_flag = 0
 ch = 0
 windows = 0  # 0 = windows 7, 1 = windows 10
-hwnd_ignore = [66562, 1050110, 65794]
+text_ignore = ['Start', 'AMD:CCC-AE', 'MainWindow', 'Program Ma', 'Microsoft ', 'CN=Microso']
 
 
 # Press F15 every 15 min
@@ -51,8 +51,8 @@ def caffeine_thread():
 # Return list of active window handlers
 def get_hwnds():
     def callback(hwnd, hwnds):
-        if win32gui.IsWindowVisible(hwnd) and not win32gui.IsIconic(hwnd) and hwnd not in hwnd_ignore and \
-                win32gui.GetWindowText(hwnd):
+        if win32gui.IsWindowVisible(hwnd) and not win32gui.IsIconic(hwnd) and win32gui.GetWindowText(hwnd)[0:10] \
+                not in text_ignore and win32gui.GetWindowText(hwnd):
             hwnds.append(hwnd)
         return True
     hwnds = []
@@ -73,17 +73,33 @@ def listen_thread():
             monitor_flag = 1
             keyboard.hook(monitor_keyevents, suppress=True)
             mouse.hook(monitor_mouse)
-            for num, awnd in enumerate(get_hwnds()):
-                print(win32gui.GetWindowText(awnd)[0:10], awnd, win32gui.GetWindowRect(awnd))  # Print active window name
-                w_l, w_t, w_r, w_b = win32gui.GetWindowRect(awnd)  # get active window placement
-                os.system(str(num + 1) + '.jpg')  # open picture
-                time.sleep(0.5)  # delay to allow picture to enter foreground
-                nwnd = win32gui.GetForegroundWindow()  # change window handle to foreground window
-                win32gui.MoveWindow(nwnd, w_l, w_t, w_r - w_l, w_b - w_t, 0)  # place window handle
+            wnd_dim = []
+            count = 0
+            for awnd_num, awnd in enumerate(get_hwnds()):
+                print(win32gui.GetWindowText(awnd)[0:10], awnd, win32gui.GetWindowRect(awnd))  # Print window name
+                (w_l, w_t, w_r, w_b) = win32gui.GetWindowRect(awnd)  # get active window placement
+                wnd_dim.append((w_l, w_t, w_r, w_b))
+                os.system(str(awnd_num + 1) + '.jpg')  # open picture
+                # time.sleep(1)  # delay to allow picture to enter foreground
+                # nwnd = win32gui.GetForegroundWindow()  # change window handle to foreground window
+                # win32gui.MoveWindow(nwnd, w_l, w_t, w_r - w_l, w_b - w_t, 0)  # place window handle
+            time.sleep(1)
+            for nwnd in get_hwnds():
+                if win32gui.GetWindowText(nwnd)[0:10] == 'Photos':
+                    wnd_l = wnd_dim[count][0]
+                    wnd_t = wnd_dim[count][1]
+                    wnd_r = wnd_dim[count][2]
+                    wnd_b = wnd_dim[count][3]
+                    print(win32gui.GetWindowText(nwnd)[0:10], wnd_l, wnd_t, wnd_r, wnd_b)
+                    win32gui.MoveWindow(nwnd, wnd_l, wnd_t, wnd_r - wnd_l, wnd_b - wnd_t, 0)  # place window handle
+                    count += 1
         if (lock_flag == 0) and (monitor_flag == 1):
             print('Entering unlock mode')
             monitor_flag = 0
-            subprocess.call('taskkill /im Microsoft.Photos.exe /f')
+            if windows == 1:
+                subprocess.call('taskkill /im Microsoft.Photos.exe /f')
+            else:
+                subprocess.call('taskkill /im dllhost.exe /f')
             keyboard.unhook_all()
             keyboard.add_hotkey(lock_hotkey, lock, args=[1], suppress=True)
             mouse.unhook_all()
